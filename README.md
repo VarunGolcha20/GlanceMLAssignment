@@ -28,6 +28,7 @@ Three models, each on the axis it owns: **Standard CLIP** (environment), **Fashi
 | `models_store.py` | loads the 3 models + Qdrant client; embedding helpers |
 | `indexing.py` | Part A: segmentation + dual-encoder indexing |
 | `retrieval.py` | Part B: adaptive fusion + BLIP rerank (fusion output only) |
+| `evaluator.py` | fair comparison: VLM-judge P@k + judge-free binding swap-probe |
 | `run.py` | entrypoint |
 
 ## Setup
@@ -41,7 +42,7 @@ Point `config.IMAGE_GLOB` at your images and `config.QDRANT_PATH` at a writable 
 ## Run
 
 ```bash
-python -m fashion_search.run --index     
+python -m fashion_search.run --index     # build index, then run the 10 test prompts
 python -m fashion_search.run             # retrieve only (index already built)
 ```
 
@@ -51,6 +52,30 @@ from fashion_search import models_store as ms, indexing, retrieval
 client = ms.get_client()
 indexing.build_index(client)                        # once
 retrieval.show_results(client, "a red tie and a white shirt in a formal setting")
+```
+
+## Evaluation
+
+`evaluator.py` measures the system two ways, both reusing the built index. First, a
+**precision@k** comparison where each approach — Standard-CLIP-only, Fashion-CLIP-only,
+fusion, and the full fusion+BLIP pipeline — runs its *own* end-to-end retrieval, and a
+local Qwen2-VL judge marks each returned image match/no-match (judge failures are excluded,
+never scored 0). Because every approach retrieves independently, the columns can actually
+differ. Second, a judge-free **binding swap-probe**: for a colour-inverted query pair
+("red tie / white shirt" vs "white tie / red shirt") it measures the top-k overlap — a high
+overlap means the system is colour-blind to which colour goes on which garment, so lower is
+better. This is the most direct, label-free read on compositional binding.
+
+```bash
+pip install qwen-vl-utils accelerate        # for the VLM judge
+python -m fashion_search.evaluator          # binding probe (always) + P@k (needs Qwen2-VL)
+```
+
+```python
+from fashion_search import models_store as ms, evaluator
+client = ms.get_client()
+evaluator.run_binding_probe(client, evaluator.BINDING_PAIRS)   # no judge needed
+evaluator.run_precision(client, k=5)                           # Qwen2-VL judge
 ```
 
 ## Notes
