@@ -41,7 +41,7 @@ Point `config.IMAGE_GLOB` at your images and `config.QDRANT_PATH` at a writable 
 ## Run
 
 ```bash
-python -m fashion_search.run --index     # build index, then run the 10 test prompts
+python -m fashion_search.run --index     
 python -m fashion_search.run             # retrieve only (index already built)
 ```
 
