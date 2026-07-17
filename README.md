@@ -51,7 +51,14 @@ python -m fashion_search.run             # retrieve only (index already built)
 from fashion_search import models_store as ms, indexing, retrieval
 client = ms.get_client()
 indexing.build_index(client)                        # once
-retrieval.show_results(client, "a red tie and a white shirt in a formal setting")
+test_prompts=["A person in a bright yellow raincoat.",                                 # 1. Attribute Specific
+    "Professional business attire inside a modern office.",                  # 2. Contextual/Place
+    "Someone wearing a blue shirt sitting on a park bench.",                 # 3. Complex Semantic
+    "Casual weekend outfit for a city walk.",                                # 4. Style Inference
+    "A red tie and a white shirt in a formal setting.",
+]
+for prompt in test_prompts:
+  retrieval.show_results(client, prompt)
 ```
 
 ## Evaluation
